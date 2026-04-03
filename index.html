@@ -5,146 +5,95 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Audion Tools</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0f1115;
-      --panel: #171b24;
-      --panel2: #11161d;
-      --text: #e9eef7;
-      --muted: #aab6c8;
-      --accent: #7aa2ff;
-      --border: #283041;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font: 16px/1.65 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .wrap {
-      width: min(1120px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 40px 0 64px;
-    }
-
-    .hero {
-      background: linear-gradient(180deg, var(--panel), var(--panel2));
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-
-    h1 {
-      margin: 0 0 10px;
-      font-size: clamp(34px, 6vw, 54px);
-      line-height: 1.05;
-    }
-
-    .lead {
-      margin: 0;
-      font-size: 18px;
-      color: var(--muted);
-      max-width: 760px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-top: 28px;
-    }
-
-    .card {
-      background: linear-gradient(180deg, #171c26, #121721);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 22px;
-    }
-
-    .card h2 {
-      margin: 0 0 10px;
-      font-size: 22px;
-    }
-
-    .card p {
-      margin: 0 0 16px;
-      color: var(--muted);
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 11px 16px;
-      border-radius: 12px;
-      background: var(--accent);
-      color: #08111f;
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    .btn.secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 22px;
-    }
-
-    .foot {
-      margin-top: 26px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    a { color: inherit; }
-  </style>
+  <meta name="description" content="Portable utilities, ready-to-run packages, and clear download pages.">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="wrap">
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand">Audion Tools</div>
+
+      <nav class="nav">
+        <a href="#tools">Tools</a>
+        <a href="#about">About</a>
+        <a href="https://github.com/Tensionix/tensionix.github.io">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
     <section class="hero">
-      <h1>Audion Tools</h1>
-      <p class="lead">
-        Portable utilities, ready-to-run packages, and clean download pages.
-      </p>
+      <div class="wrap">
+        <div class="hero-box">
+          <h1>Portable tools.<br>Clean downloads.</h1>
 
-      <div class="actions">
-        <a class="btn" href="#tools">Browse tools</a>
-        <a class="btn secondary" href="https://github.com/Tensionix/tensionix.github.io">Source repo</a>
-      </div>
-
-      <div class="grid" id="tools">
-        <article class="card">
-          <h2>Audion Office Image Optimizer</h2>
-          <p>
-            Portable image optimizer for DOCX and PPTX workflows.
+          <p class="lead">
+            Ready-to-run packages, clear utility pages, and direct downloads without forcing users to unpack the whole repository logic.
           </p>
-          <a class="btn secondary" href="#">Coming soon</a>
-        </article>
 
-        <article class="card">
-          <h2>Next utility</h2>
-          <p>
-            This block can later become a real tool page with screenshots,
-            version history, and a Download button.
-          </p>
-          <a class="btn secondary" href="#">Coming soon</a>
-        </article>
+          <div class="actions">
+            <a class="btn primary" href="#tools">Browse tools</a>
+            <a class="btn secondary" href="https://github.com/Tensionix/tensionix.github.io">Source repo</a>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <div class="foot">
-        First dark-mode landing page for GitHub Pages.
+    <section class="section" id="tools">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Tools</h2>
+          <p>Each utility will get its own page, description, screenshots, and direct download button.</p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <h3>Audion Office Image Optimizer</h3>
+            <div class="meta">Portable utility · DOCX/PPTX images</div>
+            <p>
+              Image optimization tool for Office workflows with a ready-to-run package.
+            </p>
+            <div class="card-actions">
+              <a class="btn primary" href="#">Download</a>
+              <a class="btn secondary" href="#">Details</a>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3>Next Utility</h3>
+            <div class="meta">Coming soon</div>
+            <p>
+              A placeholder for the next portable tool page.
+            </p>
+            <div class="card-actions">
+              <a class="btn secondary" href="#">Coming soon</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>About</h2>
+        </div>
+
+        <div class="about-box">
+          <p>
+            This site is the public showcase for Audion utilities. The goal is simple:
+            users open a page, read what the tool does, and download a ready package.
+            No dependency hunting. No confusion between source files and release assets.
+          </p>
+        </div>
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      Built on <code>GitHub Pages</code> for public showcase and downloads.
+    </div>
+  </footer>
 </body>
 </html>
