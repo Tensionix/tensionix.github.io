@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Audion Tools</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #171b24;
+      --text: #e9eef7;
+      --muted: #aab6c8;
+      --accent: #7aa2ff;
+      --border: #283041;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font: 16px/1.6 system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(960px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .hero {
+      background: linear-gradient(180deg, #151a23, #11161d);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 40px;
+      line-height: 1.1;
+    }
+
+    p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #08111f;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .note {
+      margin-top: 24px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Audion Tools</h1>
+      <p>Portable tools, ready-to-run packages, and clear download pages.</p>
+      <a class="btn" href="#">First utility coming soon</a>
+      <div class="note">GitHub Pages dark starter page is working.</div>
+    </section>
+  </main>
+</body>
+</html>
