@@ -15,9 +15,26 @@ A self-maintaining GitHub Pages site that presents the public GitHub account Ten
 - The Pages source is already set to "GitHub Actions". Do not touch repository settings.
 
 ## Pages: About (home) · Projects · Downloads
-- About: avatar, name, bio, links to tensionix.com and the GitHub profile. Short.
-- Projects: a card per repository with icon, display name, description, category chips from topics, version and release date, and the screenshot if present (click to enlarge). Links: homepageUrl (audion.dev) and the repository main page only.
-- Downloads: per project, icon, display name, version, date and one button per `.zip` in the latest release: the plain zip is "Download", `_Full.zip` is "Download Full"; if the release has a single zip, one "Download". Show the size. Link directly to `browser_download_url`. Hide `.sha256`, `.json` and anything that is not `.zip`.
+- About:
+  - avatar, name, bio, links to tensionix.com and the GitHub profile;
+  - the GitHub contribution calendar for the last year (GraphQL `contributionsCollection.contributionCalendar`), drawn at build time as inline SVG in the site palette (neon levels in dark, greys in light), with its total, e.g. "469 contributions in the last year";
+  - a short row of numbers: projects, contributions in the last year, on GitHub since (account `createdAt` year);
+  - "Recently released": the five newest latest-releases (display name, version, date), each linking to its project page;
+  - no download counts: releases are replaced on republish, so the counts would mislead.
+- Projects: a grid of cards, two columns on desktop and one on phones. The whole card opens the project page; the audion.dev and GitHub links inside the card keep working. Card: icon, display name, description, category chips from topics, version and release date, screenshot if present.
+- Project page `/projects/<repo>/`: see "Project pages and docs" below.
+- Downloads: per project, icon, display name (links to the project page), version, date and one button per `.zip` in the latest release: the plain zip is "Download", `_Full.zip` is "Download Full"; if the release has a single zip, one "Download". Show the size. Link directly to `browser_download_url`. Hide `.sha256`, `.json` and anything that is not `.zip`.
+
+## Project pages and docs
+- Header: icon, display name, version and date, description, category chips, the download buttons (same rules as Downloads), links to audion.dev and the repository main page, and the screenshot (click to enlarge).
+- Docs: every `.md` file in the project repo's `docs/` or `Docs/` folder, subfolders included (e.g. `tools/`). Left: a sidebar listing the documents. Right: the rendered document (reading width about 880 px; a table of contents from its headings is welcome). Each document has its own URL `/projects/<repo>/<doc>/`; the project page itself opens README, or the first document.
+- Languages: most files come in pairs `NAME_EN.md` / `NAME_RU.md`. The sidebar lists each document once, and the viewer has an EN · RU switch, EN by default. A document that exists in one language only is listed with a small language mark.
+- Order: README, then USER_GUIDE, then the rest alphabetically. Sidebar title: the document's first `# ` heading, falling back to the file name made readable (`USER_GUIDE` → "User Guide").
+- If the same file exists in both `docs/` and `Docs/`, use the folder with the more recent commit (tc-updater has a stale `docs/` left from an older release).
+- Rendered at build time: the fetch step writes the Markdown into a generated collection inside the runner, nothing is committed. GitHub-flavoured Markdown: tables, fenced code, task lists. Links between documents of the same project are rewritten to their site pages; images used by the docs are copied into the build; any other relative link becomes plain text, so there are no deep links into the repository.
+- Projects without docs (six today): the project page shows the header only, without a sidebar.
+- Some guides are 150–230 KB; long pages must stay easy to read and navigate.
+- On phones the sidebar collapses above the document.
 - Display name comes from the zip file name: `Audion_Office_OCR_AI_v1.8.2.zip` → "Audion Office OCR AI" (drop `_v<version>`, `_Full`, `.zip`; underscores become spaces). Fallback: the repository name.
 
 ## Images (taken from GitHub, copied into the build, not hotlinked)
