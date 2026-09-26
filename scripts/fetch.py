@@ -452,6 +452,7 @@ def project(repo, local_icons):
         "release": version,
         "downloads": files,
         "docs": repo_docs.sidebar() if repo_docs else [],
+        "doc_count": len(repo_docs.docs) if repo_docs else 0,
     }
     count = write_pages(item, repo_docs)
     print(
@@ -550,6 +551,8 @@ def build(account):
     return {
         "profile": profile,
         "contributions": contributions,
+        # Each document once, whatever languages it comes in.
+        "documents": f"{sum(p['doc_count'] for p in projects):,}",
         "recent": [
             {key: p[key] for key in ("repo", "name", "page", "icon", "release")}
             for p in projects if p["release"]

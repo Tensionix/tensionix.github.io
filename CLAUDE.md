@@ -18,7 +18,7 @@ A self-maintaining GitHub Pages site that presents the public GitHub account Ten
 - About:
   - avatar, name, bio, links to tensionix.com and the GitHub profile;
   - the GitHub contribution calendar for the last year (GraphQL `contributionsCollection.contributionCalendar`), drawn at build time as inline SVG in the site palette (neon levels in dark, greys in light), with its total, e.g. "469 contributions in the last year";
-  - a short row of numbers: projects, contributions in the last year, on GitHub since (account `createdAt` year);
+  - a short row of numbers: projects, contributions in the last year, documents (each document once, whatever languages it comes in);
   - "Recently released": the five newest latest-releases (display name, version, date), each linking to its project page;
   - no download counts: releases are replaced on republish, so the counts would mislead.
 - Projects: a grid of cards, two columns on desktop and one on phones. The whole card opens the project page; the audion.dev and GitHub links inside the card keep working. Card: icon, display name, description, category chips from topics, version and release date, screenshot if present.
