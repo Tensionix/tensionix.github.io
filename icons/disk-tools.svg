@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Audion Disk Tools — Sea Blue and amber, larger mask symbols; lighter pair B for the dark taskbar</title>
+  <desc>Two mirrored folder panels with six-spoke mask symbols, flat fills and a transparent background.</desc>
+  <defs>
+    <path id="folder" d="M92 174 H180 Q196 174 207 188 L266 263 H436 A48 48 0 0 1 484 311 V802 A48 48 0 0 1 436 850 H92 A48 48 0 0 1 44 802 V222 A48 48 0 0 1 92 174 Z"/>
+    <path id="mask" d="M264 482 V666 M184.33 528 L343.67 620 M184.33 620 L343.67 528"/>
+  </defs>
+  <g stroke="#192630" stroke-width="24" stroke-linejoin="round">
+    <use href="#folder" fill="#4CBCDB"/>
+    <use href="#folder" transform="translate(1024 0) scale(-1 1)" fill="#EABF5A"/>
+  </g>
+  <g fill="none" stroke="#192630" stroke-width="44" stroke-linecap="round">
+    <use href="#mask"/>
+    <use href="#mask" transform="translate(496 0)"/>
+  </g>
+</svg>
+
