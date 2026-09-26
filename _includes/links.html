@@ -1,0 +1,6 @@
+<p class="links">
+  {%- if include.project.homepage %}
+  <a href="{{ include.project.homepage | escape }}">{{ include.project.homepage_label | escape }}</a>
+  {%- endif %}
+  <a href="{{ include.project.url | escape }}">GitHub</a>
+</p>

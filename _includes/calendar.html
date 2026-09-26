@@ -1,0 +1,12 @@
+{%- assign calendar = site.data.github.contributions -%}
+<svg class="calendar" viewBox="0 0 {{ calendar.width }} {{ calendar.height }}" width="{{ calendar.width }}" height="{{ calendar.height }}" role="img" aria-label="{{ calendar.caption }}">
+  {%- for month in calendar.months %}
+  <text class="calendar-label" x="{{ month.x }}" y="10">{{ month.label }}</text>
+  {%- endfor %}
+  {%- for day in calendar.days %}
+  <text class="calendar-label" x="0" y="{{ day.y }}">{{ day.label }}</text>
+  {%- endfor %}
+  {%- for cell in calendar.cells %}
+  <rect class="level-{{ cell.level }}" x="{{ cell.x }}" y="{{ cell.y }}" width="{{ calendar.cell }}" height="{{ calendar.cell }}" rx="2"><title>{{ cell.label }}</title></rect>
+  {%- endfor %}
+</svg>

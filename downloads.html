@@ -11,14 +11,10 @@ permalink: /downloads/
   <li class="card download">
     {% include icon.html project=project px=40 %}
     <div class="download-text">
-      <h2><a href="{{ '/projects/' | relative_url }}#{{ project.repo | slugify }}">{{ project.name | escape }}</a></h2>
-      <p class="meta">{{ project.release.tag | escape }}{% if project.release.date %} · <time datetime="{{ project.release.date }}">{{ project.release.date_label }}</time>{% endif %}</p>
+      <h2><a href="{{ project.page | relative_url }}">{{ project.name | escape }}</a></h2>
+      {% include release.html project=project %}
     </div>
-    <div class="download-buttons">
-      {%- for file in project.downloads %}
-      <a class="button" href="{{ file.url | escape }}" title="{{ file.file | escape }}">{{ file.label }} <span class="size">{{ file.size_label }}</span></a>
-      {%- endfor %}
-    </div>
+    {% include download-buttons.html project=project %}
   </li>
   {%- endif %}
 {%- endfor %}

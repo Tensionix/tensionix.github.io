@@ -30,8 +30,9 @@ jobs:
 
       - run: pip install -r scripts/requirements.txt
 
-      # Profile, repositories and releases in one GraphQL query; images are
-      # copied into the build. Fails on any error, so nothing is deployed.
+      # Profile, contribution calendar, repositories, releases and docs trees
+      # in one GraphQL query; images and docs are copied into the build.
+      # Fails on any error, so nothing is deployed.
       - name: Fetch from the GitHub API
         run: python3 scripts/fetch.py
         env:

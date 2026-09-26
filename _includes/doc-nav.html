@@ -1,0 +1,28 @@
+<nav class="doc-nav" aria-label="{{ include.label | default: "Documents" }}">
+  {%- for group in include.project.docs %}
+  {%- if group.label != "" %}
+  <p class="doc-group">{{ group.label | escape }}</p>
+  {%- endif %}
+  <ul>
+    {%- for item in group.items %}
+    {%- assign href = item.urls[page.lang] | default: item.url %}
+    {%- assign title = item.titles[page.lang] | default: item.title %}
+    {%- if item.slug == page.doc %}
+    <li class="current">
+      <a href="{{ href | relative_url }}" aria-current="page">{{ title | escape }}</a>
+      {%- if item.langs.size == 1 %} <span class="lang-mark">{{ item.langs[0] | upcase }}</span>{% endif %}
+      {%- if page.toc.size > 1 %}
+      <ul class="toc">
+        {%- for heading in page.toc %}
+        <li><a href="#{{ heading.id }}">{{ heading.text | escape }}</a></li>
+        {%- endfor %}
+      </ul>
+      {%- endif %}
+    </li>
+    {%- else %}
+    <li><a href="{{ href | relative_url }}">{{ title | escape }}</a>{% if item.langs.size == 1 %} <span class="lang-mark">{{ item.langs[0] | upcase }}</span>{% endif %}</li>
+    {%- endif %}
+    {%- endfor %}
+  </ul>
+  {%- endfor %}
+</nav>

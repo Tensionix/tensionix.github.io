@@ -1,0 +1,3 @@
+{%- if include.project.release -%}
+<p class="meta">{{ include.project.release.tag | escape }}{% if include.project.release.date %} · <time datetime="{{ include.project.release.date }}">{{ include.project.release.date_label }}</time>{% endif %}</p>
+{%- endif -%}
