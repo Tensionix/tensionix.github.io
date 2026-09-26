@@ -1,0 +1,5 @@
+{%- if include.project.icon -%}
+<img class="icon" src="{{ include.project.icon | relative_url }}" alt="" width="{{ include.px | default: 48 }}" height="{{ include.px | default: 48 }}" loading="lazy">
+{%- else -%}
+<svg class="icon icon-glyph" viewBox="0 0 48 48" width="{{ include.px | default: 48 }}" height="{{ include.px | default: 48 }}" aria-hidden="true"><path d="M24 7 39 15.5v17L24 41 9 32.5v-17z"/><path d="M9 15.5 24 24l15-8.5M24 24v17"/></svg>
+{%- endif -%}
