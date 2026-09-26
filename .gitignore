@@ -1,0 +1,9 @@
+# Produced by the build from the GitHub API; never committed.
+_data/
+media/
+
+_site/
+.jekyll-cache/
+.bundle/
+vendor/
+__pycache__/
