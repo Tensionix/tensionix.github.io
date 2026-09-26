@@ -1,0 +1,56 @@
+---
+layout: default
+---
+{%- assign project = site.data.github.projects | where: "repo", page.repo | first -%}
+{%- if page.home %}
+<header class="project-header{% if project.screenshot %} has-screenshot{% endif %}">
+  <div class="project-intro">
+    <div class="head">
+      {% include icon.html project=project px=56 %}
+      <div>
+        <h1>{{ project.name | escape }}</h1>
+        {% include release.html project=project %}
+      </div>
+    </div>
+    {%- if project.description != "" %}
+    <p class="description">{{ project.description | escape }}</p>
+    {%- endif %}
+    {% include chips.html project=project %}
+    {% include download-buttons.html project=project %}
+    {% include links.html project=project %}
+  </div>
+  {% include screenshot.html project=project %}
+</header>
+{%- else %}
+<header class="project-bar">
+  <a class="project-bar-name" href="{{ project.page | relative_url }}">{% include icon.html project=project px=32 %}<span>{{ project.name | escape }}</span></a>
+  {% include release.html project=project %}
+</header>
+{%- endif %}
+
+{%- if project.docs.size > 0 %}
+<div class="docs">
+  <details class="doc-picker">
+    <summary>{{ page.doc_title | escape }}</summary>
+    {% include doc-nav.html project=project label="Documents menu" %}
+  </details>
+  <aside class="doc-sidebar">
+    {% include doc-nav.html project=project %}
+  </aside>
+  <article class="doc" lang="{{ page.lang }}">
+    <p class="doc-lang">
+      {%- if page.languages %}
+      <a href="{{ page.languages.en | relative_url }}" hreflang="en"{% if page.lang == "en" %} aria-current="page"{% endif %}>EN</a>
+      <span aria-hidden="true">·</span>
+      <a href="{{ page.languages.ru | relative_url }}" hreflang="ru"{% if page.lang == "ru" %} aria-current="page"{% endif %}>RU</a>
+      {%- else %}
+      <span class="lang-mark">{{ page.lang | upcase }}</span>
+      {%- endif %}
+    </p>
+{{ content }}
+  </article>
+</div>
+<a class="to-top" href="#" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</a>
+{%- endif %}

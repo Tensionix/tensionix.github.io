@@ -1,0 +1,7 @@
+{%- if include.project.downloads.size > 0 -%}
+<div class="download-buttons">
+  {%- for file in include.project.downloads %}
+  <a class="button" href="{{ file.url | escape }}" title="{{ file.file | escape }}">{{ file.label }} <span class="size">{{ file.size_label }}</span></a>
+  {%- endfor %}
+</div>
+{%- endif -%}

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Fetch the account from the GitHub API and write the data the site is built from.
+"""Fetch the account from the GitHub API and write what the site is built from.
 
-Writes _data/github.json and copies the avatar, icons and screenshots into
-media/. Both are produced inside the build and never committed. Any failure
-exits non-zero, so the job stops and the last good site stays online.
+Writes _data/github.json, one page per project document into the
+_project_pages collection, and copies the avatar, icons, screenshots and
+document images into media/. All of it is produced inside the build and never
+committed. Any failure exits non-zero, so the job stops and the last good site
+stays online.
 
     GITHUB_TOKEN=... python3 scripts/fetch.py
     python3 scripts/fetch.py --save response.json     # also keep the API response
@@ -21,13 +23,17 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime
 from pathlib import Path
 
 from PIL import Image
 
+import docs
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA_FILE = ROOT / "_data" / "github.json"
+PAGES = ROOT / "_project_pages"
 MEDIA = ROOT / "media"
 LOCAL_ICONS = ROOT / "icons"
 
@@ -37,17 +43,41 @@ RAW_URL = "https://raw.githubusercontent.com"
 
 # Looked up in each project repository, first found wins.
 ICON_PATHS = ["Assets/app.svg", "system_core/icons/app.png"]
-SCREENSHOT_PATHS = ["docs/screenshot.png", "Docs/screenshot.png"]
+# The docs folder is spelled both ways; a file in both comes from the one changed last.
+DOC_FOLDERS = ["docs", "Docs"]
+DOC_DEPTH = 4
+SCREENSHOT = "screenshot.png"
 
 SCREENSHOT_WIDTH = 1600
 THUMBNAIL_WIDTH = 800
 ICON_SIZE = 256
+RECENT_RELEASES = 5
+# Repositories per request: with their docs trees a page of 100 runs into
+# GitHub's GraphQL time limit (HTTP 502), so the same query is paged.
+PAGE_SIZE = 10
+LEVELS = {"NONE": 0, "FIRST_QUARTILE": 1, "SECOND_QUARTILE": 2, "THIRD_QUARTILE": 3, "FOURTH_QUARTILE": 4}
 
 
-def _objects(prefix, paths):
-    return "\n".join(
-        f'        {prefix}{i}: object(expression: "HEAD:{path}") {{ __typename }}'
-        for i, path in enumerate(paths)
+def _tree(depth):
+    fields = "name type oid path"
+    if depth > 1:
+        fields += f" object {{ ... on Tree {{ entries {{ {_tree(depth - 1)} }} }} }}"
+    return fields
+
+
+def _aliases():
+    lines = [f'        icon{i}: object(expression: "HEAD:{path}") {{ __typename }}' for i, path in enumerate(ICON_PATHS)]
+    lines += [
+        f'        docs{i}: object(expression: "HEAD:{folder}") {{ ... on Tree {{ entries {{ {_tree(DOC_DEPTH)} }} }} }}'
+        for i, folder in enumerate(DOC_FOLDERS)
+    ]
+    return "\n".join(lines)
+
+
+def _history():
+    return " ".join(
+        f'docsCommit{i}: history(first: 1, path: "{folder}") {{ nodes {{ committedDate }} }}'
+        for i, folder in enumerate(DOC_FOLDERS)
     )
 
 
@@ -60,7 +90,14 @@ query($login: String!, $after: String) {{
     url
     websiteUrl
     avatarUrl(size: 460)
-    repositories(first: 100, after: $after, ownerAffiliations: [OWNER], privacy: PUBLIC,
+    createdAt
+    contributionsCollection {{
+      contributionCalendar {{
+        totalContributions
+        weeks {{ contributionDays {{ date weekday contributionCount contributionLevel }} }}
+      }}
+    }}
+    repositories(first: {PAGE_SIZE}, after: $after, ownerAffiliations: [OWNER], privacy: PUBLIC,
                  isFork: false, isArchived: false, orderBy: {{field: NAME, direction: ASC}}) {{
       pageInfo {{ hasNextPage endCursor }}
       nodes {{
@@ -71,15 +108,14 @@ query($login: String!, $after: String) {{
         isPrivate
         isFork
         isArchived
-        defaultBranchRef {{ target {{ oid }} }}
+        defaultBranchRef {{ target {{ oid ... on Commit {{ {_history()} }} }} }}
         repositoryTopics(first: 20) {{ nodes {{ topic {{ name }} }} }}
         latestRelease {{
           tagName
           publishedAt
           releaseAssets(first: 100) {{ nodes {{ name size downloadUrl }} }}
         }}
-{_objects("icon", ICON_PATHS)}
-{_objects("screenshot", SCREENSHOT_PATHS)}
+{_aliases()}
       }}
     }}
   }}
@@ -91,8 +127,9 @@ class FetchError(Exception):
     pass
 
 
-def request(url, data=None, headers=None, attempts=4):
-    """GET (or POST when data is given) with a few retries on transient errors."""
+def request(url, data=None, headers=None, attempts=4, missing_ok=False):
+    """GET (or POST when data is given) with a few retries on transient errors.
+    With missing_ok, a 404 returns None instead of failing."""
     headers = {"User-Agent": f"{OWNER}.github.io build", **(headers or {})}
     for attempt in range(1, attempts + 1):
         try:
@@ -100,6 +137,8 @@ def request(url, data=None, headers=None, attempts=4):
             with urllib.request.urlopen(req, timeout=60) as response:
                 return response.read()
         except urllib.error.HTTPError as error:
+            if error.code == 404 and missing_ok:
+                return None
             transient = error.code >= 500 or error.code == 429
             if not transient or attempt == attempts:
                 raise FetchError(f"{url}: HTTP {error.code}") from error
@@ -136,9 +175,9 @@ def fetch_account(token):
     return {**user, "repositories": repositories}
 
 
-def raw_file(repo, path):
+def raw_file(repo, path, missing_ok=False):
     oid = repo["defaultBranchRef"]["target"]["oid"]
-    return request(f"{RAW_URL}/{OWNER}/{repo['name']}/{oid}/{urllib.parse.quote(path)}")
+    return request(f"{RAW_URL}/{OWNER}/{repo['name']}/{oid}/{urllib.parse.quote(path)}", missing_ok=missing_ok)
 
 
 def exists(repo, prefix, index):
@@ -155,6 +194,15 @@ def open_image(data, what):
     # Palette and greyscale images would be resized without filtering.
     return image if image.mode in ("RGB", "RGBA") else image.convert("RGBA")
 
+
+def scaled(image, width):
+    if image.width <= width:
+        return image
+    height = round(image.height * width / image.width)
+    return image.resize((width, height), Image.LANCZOS)
+
+
+# Icons and screenshots --------------------------------------------------------
 
 def save_icon(name, data, ext, source):
     target = MEDIA / "icons" / f"{name}.{ext}"
@@ -194,33 +242,116 @@ def find_icon(repo, local_icons):
     return None, "glyph"
 
 
-def scaled(image, width):
-    if image.width <= width:
-        return image
-    height = round(image.height * width / image.width)
-    return image.resize((width, height), Image.LANCZOS)
-
-
-def find_screenshot(repo):
+def save_screenshot(repo, path):
     name = repo["name"]
-    for index, path in enumerate(SCREENSHOT_PATHS):
-        if not exists(repo, "screenshot", index):
-            continue
-        image = open_image(raw_file(repo, path), f"{name}/{path}")
-        if image is None:
-            continue
-        folder = MEDIA / "screenshots"
-        folder.mkdir(parents=True, exist_ok=True)
-        full = scaled(image, SCREENSHOT_WIDTH)
-        full.save(folder / f"{name}.png", "PNG", optimize=True)
-        shot = {"src": f"/media/screenshots/{name}.png", "width": full.width, "height": full.height}
-        # A smaller copy for the card; the full one is loaded when enlarged.
-        if full.width > THUMBNAIL_WIDTH:
-            scaled(full, THUMBNAIL_WIDTH).save(folder / f"{name}.small.png", "PNG", optimize=True)
-            shot.update(thumb=f"/media/screenshots/{name}.small.png", thumb_width=THUMBNAIL_WIDTH)
-        return shot, path
-    return None, None
+    image = open_image(raw_file(repo, path), f"{name}/{path}")
+    if image is None:
+        return None
+    folder = MEDIA / "screenshots"
+    folder.mkdir(parents=True, exist_ok=True)
+    full = scaled(image, SCREENSHOT_WIDTH)
+    full.save(folder / f"{name}.png", "PNG", optimize=True)
+    shot = {"src": f"/media/screenshots/{name}.png", "width": full.width, "height": full.height}
+    # A smaller copy for the cards; the full one is loaded when enlarged.
+    if full.width > THUMBNAIL_WIDTH:
+        scaled(full, THUMBNAIL_WIDTH).save(folder / f"{name}.small.png", "PNG", optimize=True)
+        shot.update(thumb=f"/media/screenshots/{name}.small.png", thumb_width=THUMBNAIL_WIDTH)
+    return shot
 
+
+# Docs -------------------------------------------------------------------------
+
+def _entries(tree, found, repo_name):
+    for entry in tree.get("entries") or []:
+        if entry["type"] == "blob":
+            found[entry["path"]] = entry["oid"]
+        elif entry["type"] == "tree":
+            if entry.get("object") is None:
+                print(f"  warning: {repo_name}/{entry['path']} is nested too deep, skipped")
+            else:
+                _entries(entry["object"], found, repo_name)
+
+
+def doc_files(repo):
+    """{path inside the docs folder: {"path", "oid"}} over docs/ and Docs/.
+    A file present in both comes from the folder with the more recent commit."""
+    target = repo["defaultBranchRef"]["target"]
+    folders = []
+    for index, folder in enumerate(DOC_FOLDERS):
+        tree = repo.get(f"docs{index}")
+        if not tree or tree.get("entries") is None:
+            continue
+        nodes = (target.get(f"docsCommit{index}") or {}).get("nodes") or []
+        changed = nodes[0]["committedDate"] if nodes else ""
+        found = {}
+        _entries(tree, found, repo["name"])
+        folders.append((changed, -index, folder, found))
+    files = {}
+    for changed, _, folder, found in sorted(folders, reverse=True):
+        for path, oid in found.items():
+            files.setdefault(path.split("/", 1)[1], {"path": path, "oid": oid})
+    return files
+
+
+def doc_image_copier(repo):
+    def copy(path):
+        target = MEDIA / "docs" / repo["name"] / path
+        url = "/" + urllib.parse.quote(f"media/docs/{repo['name']}/{path}")
+        if target.exists():
+            return url
+        data = raw_file(repo, path, missing_ok=True)
+        if data is None:
+            print(f"  warning: {repo['name']}/{path} is used by the docs but missing")
+            return None
+        target.parent.mkdir(parents=True, exist_ok=True)
+        image = None if path.lower().endswith((".svg", ".gif")) else open_image(data, f"{repo['name']}/{path}")
+        if image is not None and image.width > SCREENSHOT_WIDTH:
+            scaled(image, SCREENSHOT_WIDTH).save(target)
+        else:
+            target.write_bytes(data)
+        return url
+    return copy
+
+
+def write_pages(project, repo_docs):
+    """The project page and one page per document and language, for Jekyll to render."""
+    folder = PAGES / project["repo"]
+    folder.mkdir(parents=True, exist_ok=True)
+    pages = list(repo_docs.pages()) if repo_docs else []
+    if not pages:
+        pages = [{"doc": None, "lang": "en", "first": True, "title": project["name"],
+                  "permalink": project["page"], "languages": None, "toc": [], "body": ""}]
+    for index, page in enumerate(pages):
+        title = project["name"] if page["first"] else f"{page['title']} · {project['name']}"
+        front = {
+            "layout": "project",
+            "repo": project["repo"],
+            "doc": page["doc"],
+            "lang": page["lang"],
+            "home": page["first"],
+            "title": title,
+            "doc_title": page["title"],
+            "languages": page["languages"],
+            "toc": page["toc"],
+            "permalink": page["permalink"],
+            "render_with_liquid": False,
+        }
+        text = f"---\n{json.dumps(front, ensure_ascii=False)}\n---\n{page['body']}"
+        (folder / f"{index:03d}.md").write_text(text, encoding="utf-8")
+    return len(pages)
+
+
+def project_docs(repo):
+    files = doc_files(repo)
+    markdown = [rel for rel in files if rel.lower().endswith(".md")]
+    if not markdown:
+        return files, None
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        texts = dict(zip(markdown, pool.map(lambda rel: raw_file(repo, files[rel]["path"]).decode("utf-8", "replace"), markdown)))
+    return files, docs.Project(OWNER, repo["name"], files, texts, doc_image_copier(repo))
+
+
+# Releases ---------------------------------------------------------------------
 
 FULL = re.compile(r"_full(?=_|$)", re.IGNORECASE)
 VERSION = re.compile(r"_v\d[^_]*(?=_|$)", re.IGNORECASE)
@@ -266,6 +397,10 @@ def downloads(release):
     return items
 
 
+def day_label(day):
+    return f"{day.day} {day:%b %Y}"
+
+
 def host(url):
     netloc = urllib.parse.urlsplit(url).netloc
     return netloc[4:] if netloc.startswith("www.") else netloc
@@ -278,6 +413,8 @@ def web_url(url):
     return url if url.startswith(("https://", "http://")) else None
 
 
+# Projects ---------------------------------------------------------------------
+
 def project(repo, local_icons):
     name = repo["name"]
     release = repo.get("latestRelease")
@@ -285,28 +422,26 @@ def project(repo, local_icons):
     plain = [item for item in files if item["label"] == "Download"]
     title = display_name((plain or files)[0]["file"]) if files else ""
     icon, icon_source = find_icon(repo, local_icons)
-    screenshot, screenshot_source = find_screenshot(repo)
+    doc_tree, repo_docs = project_docs(repo)
+    screenshot_path = doc_tree.get(SCREENSHOT, {}).get("path")
+    screenshot = save_screenshot(repo, screenshot_path) if screenshot_path else None
     homepage = web_url(repo.get("homepageUrl"))
 
     version = None
     if release:
         published = release.get("publishedAt")
-        date = datetime.fromisoformat(published.replace("Z", "+00:00")) if published else None
+        released = datetime.fromisoformat(published.replace("Z", "+00:00")) if published else None
         version = {
             "tag": release["tagName"],
             "published": published or "",
-            "date": date.date().isoformat() if date else None,
-            "date_label": f"{date.day} {date:%b %Y}" if date else None,
+            "date": released.date().isoformat() if released else None,
+            "date_label": day_label(released) if released else None,
         }
 
-    print(
-        f"{name}: {title or '(repository name)'} | "
-        f"{version['tag'] if version else 'no release'} | {len(files)} zip | "
-        f"icon {icon_source} | screenshot {screenshot_source or 'none'}"
-    )
-    return {
+    item = {
         "repo": name,
         "name": title or name,
+        "page": f"/projects/{name}/",
         "description": (repo.get("description") or "").strip(),
         "topics": [node["topic"]["name"] for node in repo["repositoryTopics"]["nodes"]],
         "homepage": homepage,
@@ -316,6 +451,51 @@ def project(repo, local_icons):
         "screenshot": screenshot,
         "release": version,
         "downloads": files,
+        "docs": repo_docs.sidebar() if repo_docs else [],
+    }
+    count = write_pages(item, repo_docs)
+    print(
+        f"{name}: {item['name']} | {version['tag'] if version else 'no release'} | {len(files)} zip | "
+        f"icon {icon_source} | screenshot {screenshot_path or 'none'} | "
+        f"{len(repo_docs.docs) if repo_docs else 0} docs, {count} pages"
+    )
+    return item
+
+
+def calendar(collection):
+    """The contribution calendar as cells and labels for an inline SVG."""
+    source = collection["contributionCalendar"]
+    step, cell, left, top = 13, 10, 30, 16
+    cells, starts = [], []
+    weeks = source["weeks"]
+    for column, week in enumerate(weeks):
+        days = [date.fromisoformat(day["date"]) for day in week["contributionDays"]]
+        for when, day in zip(days, week["contributionDays"]):
+            count = day["contributionCount"]
+            words = "No contributions" if not count else f"{count} contribution{'s' if count != 1 else ''}"
+            cells.append({
+                "x": left + column * step,
+                "y": top + day["weekday"] * step,
+                "level": LEVELS.get(day["contributionLevel"], 0),
+                "label": f"{words} on {day_label(when)}",
+            })
+        first_of_month = next((when for when in days if when.day == 1), None)
+        if first_of_month and column < len(weeks) - 2:
+            starts.append((column, first_of_month))
+    # The month the calendar opens in is named too when its label has room.
+    if weeks and (not starts or starts[0][0] >= 3):
+        starts.insert(0, (0, date.fromisoformat(weeks[0]["contributionDays"][0]["date"])))
+    total = source["totalContributions"]
+    return {
+        "total": f"{total:,}",
+        "caption": f"{total:,} contribution{'s' if total != 1 else ''} in the last year",
+        "cells": cells,
+        "months": [{"x": left + column * step, "label": f"{when:%b}"} for column, when in starts],
+        "days": [{"y": top + weekday * step + cell - 1, "label": label}
+                 for weekday, label in ((1, "Mon"), (3, "Wed"), (5, "Fri"))],
+        "cell": cell,
+        "width": left + len(weeks) * step - (step - cell),
+        "height": top + 7 * step - (step - cell),
     }
 
 
@@ -343,9 +523,10 @@ def build(account):
     if not repos:
         raise FetchError("the API returned no repositories")
 
-    if MEDIA.exists():
-        shutil.rmtree(MEDIA)
-    MEDIA.mkdir(parents=True)
+    for generated in (MEDIA, PAGES):
+        if generated.exists():
+            shutil.rmtree(generated)
+        generated.mkdir(parents=True)
     local_icons = {path.name.lower(): path for path in LOCAL_ICONS.glob("*") if path.is_file()}
 
     projects = [project(repo, local_icons) for repo in repos]
@@ -354,6 +535,7 @@ def build(account):
     projects.sort(key=lambda p: (p["release"] or {}).get("published", ""), reverse=True)
 
     website = web_url(account.get("websiteUrl"))
+    contributions = calendar(account["contributionsCollection"])
     profile = {
         "login": account["login"],
         "name": (account.get("name") or "").strip() or account["login"],
@@ -363,8 +545,17 @@ def build(account):
         "website": website,
         "website_label": host(website) if website else None,
         "avatar": save_avatar(account["avatarUrl"]),
+        "since": account["createdAt"][:4],
     }
-    return {"profile": profile, "projects": projects}
+    return {
+        "profile": profile,
+        "contributions": contributions,
+        "recent": [
+            {key: p[key] for key in ("repo", "name", "page", "icon", "release")}
+            for p in projects if p["release"]
+        ][:RECENT_RELEASES],
+        "projects": projects,
+    }
 
 
 def main():

@@ -2,18 +2,55 @@
 layout: default
 ---
 {%- assign profile = site.data.github.profile -%}
+{%- assign contributions = site.data.github.contributions -%}
 <section class="about">
   {%- if profile.avatar %}
   <img class="avatar" src="{{ profile.avatar | relative_url }}" alt="" width="176" height="176">
   {%- endif %}
-  <h1>{{ profile.name | escape }}</h1>
-  {%- if profile.bio and profile.bio != "" %}
-  <p class="bio">{{ profile.bio | escape }}</p>
-  {%- endif %}
-  <p class="links">
-    {%- if profile.website %}
-    <a class="button" href="{{ profile.website | escape }}">{{ profile.website_label | escape }}</a>
+  <div class="about-text">
+    <h1>{{ profile.name | escape }}</h1>
+    {%- if profile.bio and profile.bio != "" %}
+    <p class="bio">{{ profile.bio | escape }}</p>
     {%- endif %}
-    <a class="button" href="{{ profile.url | escape }}">{{ profile.url_label | escape }}</a>
-  </p>
+    <p class="links">
+      {%- if profile.website %}
+      <a class="button" href="{{ profile.website | escape }}">{{ profile.website_label | escape }}</a>
+      {%- endif %}
+      <a class="button" href="{{ profile.url | escape }}">{{ profile.url_label | escape }}</a>
+    </p>
+  </div>
 </section>
+
+<dl class="stats">
+  <div><dt>projects</dt><dd>{{ site.data.github.projects.size }}</dd></div>
+  {%- if contributions %}
+  <div><dt>contributions in the last year</dt><dd>{{ contributions.total }}</dd></div>
+  {%- endif %}
+  <div><dt>on GitHub since</dt><dd>{{ profile.since }}</dd></div>
+</dl>
+
+{%- if contributions %}
+<section class="activity">
+  <h2>{{ contributions.caption }}</h2>
+  <div class="calendar-scroll">
+    {% include calendar.html %}
+  </div>
+</section>
+{%- endif %}
+
+{%- if site.data.github.recent.size > 0 %}
+<section class="recent">
+  <h2>Recently released</h2>
+  <ol>
+    {%- for project in site.data.github.recent %}
+    <li>
+      <a href="{{ project.page | relative_url }}">
+        {% include icon.html project=project px=32 %}
+        <span class="recent-name">{{ project.name | escape }}</span>
+        <span class="meta">{{ project.release.tag | escape }} · <time datetime="{{ project.release.date }}">{{ project.release.date_label }}</time></span>
+      </a>
+    </li>
+    {%- endfor %}
+  </ol>
+</section>
+{%- endif %}

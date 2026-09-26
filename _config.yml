@@ -1,8 +1,28 @@
-# Everything shown on the site comes from _data/github.json, which
-# scripts/fetch.py writes from the GitHub API during the build.
+# Everything shown on the site comes from _data/github.json and the
+# _project_pages collection, which scripts/fetch.py writes from the GitHub
+# API during the build.
 
 canonical: https://tensionix.com
 permalink: pretty
+
+collections:
+  project_pages:
+    output: true
+
+# Render the project docs the way GitHub does: GFM, ids from the heading
+# text, no typographic replacements (a flag like --help stays as written).
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  auto_ids: true
+  auto_id_stripping: true
+  math_engine: null
+  smart_quotes: ["apos", "apos", "quot", "quot"]
+  typographic_symbols: { hellip: "...", mdash: "---", ndash: "--", laquo: "<<", raquo: ">>", laquo_space: "<< ", raquo_space: " >>" }
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    guess_lang: false
 
 exclude:
   - README.md

@@ -1,0 +1,7 @@
+{%- if include.project.topics.size > 0 -%}
+<ul class="chips">
+  {%- for topic in include.project.topics %}
+  <li>{{ topic | escape }}</li>
+  {%- endfor %}
+</ul>
+{%- endif -%}

@@ -1,0 +1,16 @@
+{%- assign shot = include.project.screenshot -%}
+{%- if shot -%}
+{%- assign popover = include.project.repo | slugify | prepend: "screenshot-" -%}
+<button class="screenshot" type="button" popovertarget="{{ popover }}" aria-label="Enlarge the screenshot of {{ include.project.name | escape }}">
+  {%- if shot.thumb %}
+  <img src="{{ shot.thumb | relative_url }}" srcset="{{ shot.thumb | relative_url }} {{ shot.thumb_width }}w, {{ shot.src | relative_url }} {{ shot.width }}w" sizes="(min-width: 60rem) 34rem, calc(100vw - 2rem)" alt="" width="{{ shot.width }}" height="{{ shot.height }}" decoding="async">
+  {%- else %}
+  <img src="{{ shot.src | relative_url }}" alt="" width="{{ shot.width }}" height="{{ shot.height }}" decoding="async">
+  {%- endif %}
+</button>
+<div class="lightbox" id="{{ popover }}" popover>
+  <button type="button" popovertarget="{{ popover }}" popovertargetaction="hide" aria-label="Close">
+    <img src="{{ shot.src | relative_url }}" alt="Screenshot of {{ include.project.name | escape }}" width="{{ shot.width }}" height="{{ shot.height }}" loading="lazy" decoding="async">
+  </button>
+</div>
+{%- endif -%}
