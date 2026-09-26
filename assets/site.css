@@ -615,19 +615,21 @@ p {
   }
 }
 
+/* On a phone three tiles leave no room for "contributions", so each number
+   gets a row of its own: the number first, its label after it. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
   margin: 2.5rem 0 0;
 }
 
 .stats div {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: row-reverse;
   justify-content: flex-end;
-  gap: 0.25rem;
-  padding: 0.75rem 0.8rem;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
@@ -649,11 +651,15 @@ p {
 
 @media (min-width: 40rem) {
   .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
     margin-top: 3rem;
   }
 
   .stats div {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.25rem;
     padding: 1rem 1.25rem;
   }
 
