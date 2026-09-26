@@ -1,0 +1,55 @@
+---
+layout: default
+title: Projects
+permalink: /projects/
+---
+<h1 class="page-title">Projects</h1>
+
+<div class="projects">
+{%- for project in site.data.github.projects %}
+  <article class="card project{% if project.screenshot %} has-screenshot{% endif %}" id="{{ project.repo | slugify }}">
+    <div class="project-text">
+      <div class="head">
+        {% include icon.html project=project %}
+        <div>
+          <h2>{{ project.name | escape }}</h2>
+          {%- if project.release %}
+          <p class="meta">{{ project.release.tag | escape }}{% if project.release.date %} · <time datetime="{{ project.release.date }}">{{ project.release.date_label }}</time>{% endif %}</p>
+          {%- endif %}
+        </div>
+      </div>
+      {%- if project.description != "" %}
+      <p class="description">{{ project.description | escape }}</p>
+      {%- endif %}
+      {%- if project.topics.size > 0 %}
+      <ul class="chips">
+        {%- for topic in project.topics %}
+        <li>{{ topic | escape }}</li>
+        {%- endfor %}
+      </ul>
+      {%- endif %}
+      <p class="links">
+        {%- if project.homepage %}
+        <a href="{{ project.homepage | escape }}">{{ project.homepage_label | escape }}</a>
+        {%- endif %}
+        <a href="{{ project.url | escape }}">GitHub</a>
+      </p>
+    </div>
+    {%- if project.screenshot %}
+    {%- assign shot = project.screenshot %}
+    <button class="screenshot" type="button" popovertarget="screenshot-{{ project.repo | slugify }}" aria-label="Enlarge the screenshot of {{ project.name | escape }}">
+      {%- if shot.thumb %}
+      <img src="{{ shot.thumb | relative_url }}" srcset="{{ shot.thumb | relative_url }} {{ shot.thumb_width }}w, {{ shot.src | relative_url }} {{ shot.width }}w" sizes="(min-width: 60rem) 26rem, calc(100vw - 4.5rem)" alt="" width="{{ shot.width }}" height="{{ shot.height }}" loading="lazy" decoding="async">
+      {%- else %}
+      <img src="{{ shot.src | relative_url }}" alt="" width="{{ shot.width }}" height="{{ shot.height }}" loading="lazy" decoding="async">
+      {%- endif %}
+    </button>
+    <div class="lightbox" id="screenshot-{{ project.repo | slugify }}" popover>
+      <button type="button" popovertarget="screenshot-{{ project.repo | slugify }}" popovertargetaction="hide" aria-label="Close">
+        <img src="{{ shot.src | relative_url }}" alt="Screenshot of {{ project.name | escape }}" width="{{ shot.width }}" height="{{ shot.height }}" loading="lazy" decoding="async">
+      </button>
+    </div>
+    {%- endif %}
+  </article>
+{%- endfor %}
+</div>

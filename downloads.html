@@ -1,0 +1,25 @@
+---
+layout: default
+title: Downloads
+permalink: /downloads/
+---
+<h1 class="page-title">Downloads</h1>
+
+<ul class="downloads">
+{%- for project in site.data.github.projects %}
+  {%- if project.downloads.size > 0 %}
+  <li class="card download">
+    {% include icon.html project=project px=40 %}
+    <div class="download-text">
+      <h2><a href="{{ '/projects/' | relative_url }}#{{ project.repo | slugify }}">{{ project.name | escape }}</a></h2>
+      <p class="meta">{{ project.release.tag | escape }}{% if project.release.date %} · <time datetime="{{ project.release.date }}">{{ project.release.date_label }}</time>{% endif %}</p>
+    </div>
+    <div class="download-buttons">
+      {%- for file in project.downloads %}
+      <a class="button" href="{{ file.url | escape }}" title="{{ file.file | escape }}">{{ file.label }} <span class="size">{{ file.size_label }}</span></a>
+      {%- endfor %}
+    </div>
+  </li>
+  {%- endif %}
+{%- endfor %}
+</ul>

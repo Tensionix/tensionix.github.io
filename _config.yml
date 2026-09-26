@@ -1,0 +1,15 @@
+# Everything shown on the site comes from _data/github.json, which
+# scripts/fetch.py writes from the GitHub API during the build.
+
+canonical: https://tensionix.com
+permalink: pretty
+
+exclude:
+  - README.md
+  - CLAUDE.md
+  - Gemfile
+  - Gemfile.lock
+  - scripts/
+  - icons/
+  - vendor/
+  - response.json

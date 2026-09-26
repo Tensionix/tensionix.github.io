@@ -1,0 +1,19 @@
+---
+layout: default
+---
+{%- assign profile = site.data.github.profile -%}
+<section class="about">
+  {%- if profile.avatar %}
+  <img class="avatar" src="{{ profile.avatar | relative_url }}" alt="" width="176" height="176">
+  {%- endif %}
+  <h1>{{ profile.name | escape }}</h1>
+  {%- if profile.bio and profile.bio != "" %}
+  <p class="bio">{{ profile.bio | escape }}</p>
+  {%- endif %}
+  <p class="links">
+    {%- if profile.website %}
+    <a class="button" href="{{ profile.website | escape }}">{{ profile.website_label | escape }}</a>
+    {%- endif %}
+    <a class="button" href="{{ profile.url | escape }}">{{ profile.url_label | escape }}</a>
+  </p>
+</section>
