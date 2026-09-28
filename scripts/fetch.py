@@ -41,8 +41,10 @@ OWNER = os.environ.get("GITHUB_REPOSITORY_OWNER") or "Tensionix"
 GRAPHQL_URL = os.environ.get("GITHUB_GRAPHQL_URL") or "https://api.github.com/graphql"
 RAW_URL = "https://raw.githubusercontent.com"
 
-# Looked up in each project repository, first found wins.
-ICON_PATHS = ["Assets/app.svg", "system_core/icons/app.png"]
+# The program's icon: first the SVG or PNG in the repository's Assets/ (the
+# publisher carries it from the release), then the Python projects' own icon.
+ICON_FOLDER = "Assets"
+ICON_PATHS = ["system_core/icons/app.png"]
 # The docs folder is spelled both ways; a file in both comes from the one changed last.
 DOC_FOLDERS = ["docs", "Docs"]
 DOC_DEPTH = 4
@@ -67,6 +69,7 @@ def _tree(depth):
 
 def _aliases():
     lines = [f'        icon{i}: object(expression: "HEAD:{path}") {{ __typename }}' for i, path in enumerate(ICON_PATHS)]
+    lines.append(f'        iconFolder: object(expression: "HEAD:{ICON_FOLDER}") {{ ... on Tree {{ entries {{ name type }} }} }}')
     lines += [
         f'        docs{i}: object(expression: "HEAD:{folder}") {{ ... on Tree {{ entries {{ {_tree(DOC_DEPTH)} }} }} }}'
         for i, folder in enumerate(DOC_FOLDERS)
@@ -224,21 +227,42 @@ def save_icon(name, data, ext, source):
     return f"/media/icons/{target.name}"
 
 
+def folder_icon(repo):
+    """The icon in Assets/: app.svg or app.png, else its SVG, else its PNG."""
+    entries = ((repo.get("iconFolder") or {}).get("entries")) or []
+    names = sorted(
+        entry["name"] for entry in entries
+        if entry.get("type") == "blob" and entry["name"].lower().endswith((".svg", ".png"))
+    )
+    for preferred in ("app.svg", "app.png"):
+        for found in names:
+            if found.lower() == preferred:
+                return found
+    svg = [found for found in names if found.lower().endswith(".svg")]
+    return (svg or names or [None])[0]
+
+
 def find_icon(repo, local_icons):
-    """icons/<repo>.svg|png here, then the project's own files, else none (the glyph)."""
+    """The project's own icon first, so a new icon reaches the site with the next
+    release; icons/<repo>.svg|png here only for projects that carry none; else
+    none (the glyph)."""
     name = repo["name"]
+    candidates = []
+    found = folder_icon(repo)
+    if found:
+        candidates.append(f"{ICON_FOLDER}/{found}")
+    candidates += [path for index, path in enumerate(ICON_PATHS) if exists(repo, "icon", index)]
+    for path in candidates:
+        ext = path.rsplit(".", 1)[1].lower()
+        icon = save_icon(name, raw_file(repo, path), ext, f"{name}/{path}")
+        if icon:
+            return icon, path
     for ext in ("svg", "png"):
         local = local_icons.get(f"{name}.{ext}".lower())
         if local:
             icon = save_icon(name, local.read_bytes(), ext, f"icons/{local.name}")
             if icon:
                 return icon, f"icons/{local.name}"
-    for index, path in enumerate(ICON_PATHS):
-        if exists(repo, "icon", index):
-            ext = path.rsplit(".", 1)[1].lower()
-            icon = save_icon(name, raw_file(repo, path), ext, f"{name}/{path}")
-            if icon:
-                return icon, path
     return None, "glyph"
 
 

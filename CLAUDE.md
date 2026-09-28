@@ -38,7 +38,7 @@ A self-maintaining GitHub Pages site that presents the public GitHub account Ten
 - Display name comes from the zip file name: `Audion_Office_OCR_AI_v1.8.2.zip` → "Audion Office OCR AI" (drop `_v<version>`, `_Full`, `.zip`; underscores become spaces). Fallback: the repository name.
 
 ## Images (taken from GitHub, copied into the build, not hotlinked)
-- Icon, first found wins: `icons/<repo>.svg|png` in this repo → `Assets/app.svg` in the project repo → `system_core/icons/app.png` in the project repo → a neutral glyph. GraphQL `object(expression: "HEAD:<path>")` tells whether a file exists.
+- Icon, first found wins: the SVG or PNG in the project repo's `Assets/` (`app.svg`, `app.png`, else its SVG, else its PNG; the publisher carries it from the release) → `system_core/icons/app.png` in the project repo → `icons/<repo>.svg|png` in this repo, only for projects that carry no icon of their own → a neutral glyph. The project's own icon comes first because icons change, and a copy here goes stale. GraphQL `object(expression: "HEAD:<path>")` tells whether a file exists and lists `Assets/`.
 - Screenshot: `docs/screenshot.png` (the folder may be `Docs/`). Scale down to at most 1600 px wide at build time. No screenshot means no image; that is intended for five repositories.
 
 ## Look
