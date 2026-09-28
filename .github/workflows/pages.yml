@@ -3,8 +3,10 @@ name: Build and deploy
 on:
   push:
     branches: [main]
+  # Hourly: GitHub runs schedules late or skips them under load, and a
+  # once-a-day run left new releases off the site for more than a day.
   schedule:
-    - cron: "23 4 * * *"
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 permissions:

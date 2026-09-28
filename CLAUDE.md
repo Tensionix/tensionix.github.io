@@ -8,7 +8,7 @@ A self-maintaining GitHub Pages site that presents the public GitHub account Ten
   - profile: name, avatar, bio, websiteUrl (tensionix.com);
   - repositories: public, owned, not forks, not archived, excluding `Tensionix` and `tensionix.github.io`: name, description, homepageUrl (audion.dev page), topics, latest release (tag, date, assets).
   A new repository or release must appear on the site by itself.
-- Build and deploy with GitHub Actions (actions/deploy-pages): on push to main, on a daily schedule and by manual run. Fetch data with GITHUB_TOKEN (one GraphQL query is enough), write it to `_data/` inside the runner, build Jekyll, deploy. Never commit fetched data or images back to the repo.
+- Build and deploy with GitHub Actions (actions/deploy-pages): on push to main, on an hourly schedule (a daily one ran hours late and left new releases off the site for more than a day) and by manual run. Fetch data with GITHUB_TOKEN (one GraphQL query is enough), write it to `_data/` inside the runner, build Jekyll, deploy. Never commit fetched data or images back to the repo.
 - If fetching fails or returns no repositories, fail the job so the last good site stays online.
 - GitHub disables scheduled workflows in public repos after 60 days without activity: add a step that re-enables the workflow via the API (permissions: actions: write). No dummy commits.
 - Jekyll with your own layouts and CSS: no ready-made theme, no JS frameworks, JS only for the theme toggle. Exclude README.md and CLAUDE.md from the site.
