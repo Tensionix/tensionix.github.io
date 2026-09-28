@@ -1,17 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <title>Audion Disk Tools — Sea Blue and amber, larger mask symbols; lighter pair B for the dark taskbar</title>
-  <desc>Two mirrored folder panels with six-spoke mask symbols, flat fills and a transparent background.</desc>
-  <defs>
-    <path id="folder" d="M92 174 H180 Q196 174 207 188 L266 263 H436 A48 48 0 0 1 484 311 V802 A48 48 0 0 1 436 850 H92 A48 48 0 0 1 44 802 V222 A48 48 0 0 1 92 174 Z"/>
-    <path id="mask" d="M264 482 V666 M184.33 528 L343.67 620 M184.33 620 L343.67 528"/>
-  </defs>
-  <g stroke="#192630" stroke-width="24" stroke-linejoin="round">
-    <use href="#folder" fill="#4CBCDB"/>
-    <use href="#folder" transform="translate(1024 0) scale(-1 1)" fill="#EABF5A"/>
+  <title>Audion Disk Tools — the mask star on a dark plate</title>
+  <desc>A dark rounded plate over the whole square; a six-ray star exactly in its middle, each ray in a colour of the file families (archives, video, the hour's yellow, audio, graphics, system), a dark hub. Chosen by the owner on 28.09.2026; the orange dot of 5.33.6 in the lower left corner is gone - the star alone.</desc>
+  <rect width="1024" height="1024" rx="213.3" fill="#0E1114"/>
+  <g stroke-width="115" stroke-linecap="round">
+    <path d="M512 512 L512 256" stroke="#EA162C"/>
+    <path d="M512 512 L733.7 384" stroke="#EE9D18"/>
+    <path d="M512 512 L733.7 640" stroke="#FEC619"/>
+    <path d="M512 512 L512 768" stroke="#70C000"/>
+    <path d="M512 512 L290.3 640" stroke="#00C4E0"/>
+    <path d="M512 512 L290.3 384" stroke="#4E92DC"/>
   </g>
-  <g fill="none" stroke="#192630" stroke-width="44" stroke-linecap="round">
-    <use href="#mask"/>
-    <use href="#mask" transform="translate(496 0)"/>
-  </g>
+  <circle cx="512" cy="512" r="55" fill="#0E1114"/>
 </svg>
-
