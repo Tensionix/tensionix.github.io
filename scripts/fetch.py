@@ -57,6 +57,7 @@ RECENT_RELEASES = 5
 # Repositories per request: with their docs trees a page of 100 runs into
 # GitHub's GraphQL time limit (HTTP 502), so the same query is paged.
 PAGE_SIZE = 10
+PAGE_SIZES = (PAGE_SIZE, 5, 1)
 LEVELS = {"NONE": 0, "FIRST_QUARTILE": 1, "SECOND_QUARTILE": 2, "THIRD_QUARTILE": 3, "FOURTH_QUARTILE": 4}
 
 
@@ -85,7 +86,7 @@ def _history():
 
 
 QUERY = f"""
-query($login: String!, $after: String) {{
+query($login: String!, $after: String, $first: Int!) {{
   user(login: $login) {{
     login
     name
@@ -100,7 +101,7 @@ query($login: String!, $after: String) {{
         weeks {{ contributionDays {{ date weekday contributionCount contributionLevel }} }}
       }}
     }}
-    repositories(first: {PAGE_SIZE}, after: $after, ownerAffiliations: [OWNER], privacy: PUBLIC,
+    repositories(first: $first, after: $after, ownerAffiliations: [OWNER], privacy: PUBLIC,
                  isFork: false, isArchived: false, orderBy: {{field: NAME, direction: ASC}}) {{
       pageInfo {{ hasNextPage endCursor }}
       nodes {{
@@ -127,12 +128,15 @@ query($login: String!, $after: String) {{
 
 
 class FetchError(Exception):
-    pass
+    def __init__(self, message, *, status=None):
+        super().__init__(message)
+        self.status = status
 
 
-def request(url, data=None, headers=None, attempts=4, missing_ok=False):
+def request(url, data=None, headers=None, attempts=4, missing_ok=False, retry_502=True):
     """GET (or POST when data is given) with a few retries on transient errors.
-    With missing_ok, a 404 returns None instead of failing."""
+    With missing_ok, a 404 returns None instead of failing. GraphQL may opt out
+    of 502 retries so it can immediately retry a smaller page instead."""
     headers = {"User-Agent": f"{OWNER}.github.io build", **(headers or {})}
     for attempt in range(1, attempts + 1):
         try:
@@ -143,8 +147,8 @@ def request(url, data=None, headers=None, attempts=4, missing_ok=False):
             if error.code == 404 and missing_ok:
                 return None
             transient = error.code >= 500 or error.code == 429
-            if not transient or attempt == attempts:
-                raise FetchError(f"{url}: HTTP {error.code}") from error
+            if not transient or attempt == attempts or (error.code == 502 and not retry_502):
+                raise FetchError(f"{url}: HTTP {error.code}", status=error.code) from error
         except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
             if attempt == attempts:
                 raise FetchError(f"{url}: {error}") from error
@@ -154,26 +158,71 @@ def request(url, data=None, headers=None, attempts=4, missing_ok=False):
 def graphql(token, variables):
     body = json.dumps({"query": QUERY, "variables": variables}).encode()
     headers = {"Authorization": f"bearer {token}", "Content-Type": "application/json"}
-    result = json.loads(request(GRAPHQL_URL, data=body, headers=headers))
+    response = request(GRAPHQL_URL, data=body, headers=headers,
+                       retry_502=variables['first'] == PAGE_SIZES[-1])
+    try:
+        result = json.loads(response)
+    except (ValueError, UnicodeDecodeError) as error:
+        raise FetchError('GraphQL: invalid JSON response') from error
+    if not isinstance(result, dict):
+        raise FetchError('GraphQL: invalid response')
     if result.get("errors"):
         messages = "; ".join(e.get("message", str(e)) for e in result["errors"])
         raise FetchError(f"GraphQL: {messages}")
-    return result["data"]
+    if not isinstance(result.get('data'), dict):
+        raise FetchError('GraphQL: missing response data')
+    return result['data']
 
 
 def fetch_account(token):
-    """The user with every page of repositories joined into one list."""
+    """Every page, reducing 10 -> 5 -> 1 on HTTP 502 without advancing a cursor.
+
+    Successful pages stay in memory only. Nothing is built or saved until the
+    entire connection succeeds; partial GraphQL data is never a fallback.
+    """
     user, repositories, after = None, [], None
+    size_index, names, cursors = 0, set(), set()
     while True:
-        page = graphql(token, {"login": OWNER, "after": after})["user"]
-        if page is None:
+        size = PAGE_SIZES[size_index]
+        try:
+            page = graphql(token, {'login': OWNER, 'after': after, 'first': size}).get('user')
+        except FetchError as error:
+            if error.status != 502 or size_index == len(PAGE_SIZES) - 1:
+                raise
+            size_index += 1
+            print(f'warning: GraphQL HTTP 502; repository page {size} -> '
+                  f'{PAGE_SIZES[size_index]}; retrying the same cursor', file=sys.stderr)
+            continue
+        if not isinstance(page, dict):
             raise FetchError(f"GraphQL: user {OWNER} not found")
+        connection = page.get('repositories')
+        if not isinstance(connection, dict) or not isinstance(connection.get('nodes'), list):
+            raise FetchError('GraphQL: missing repository nodes')
+        nodes, info = connection['nodes'], connection.get('pageInfo')
+        if not isinstance(info, dict) or not isinstance(info.get('hasNextPage'), bool):
+            raise FetchError('GraphQL: missing repository pagination')
+        if len(nodes) > size:
+            raise FetchError('GraphQL: oversized repository page')
+        next_cursor = info.get('endCursor')
+        if info['hasNextPage'] and (not nodes or not isinstance(next_cursor, str)
+                                    or not next_cursor or next_cursor in cursors):
+            raise FetchError('GraphQL: repository pagination did not advance')
+        page_names = []
+        for node in nodes:
+            if not isinstance(node, dict) or not isinstance(node.get('name'), str) or not node['name']:
+                raise FetchError('GraphQL: invalid repository node')
+            name = node['name'].lower()
+            if name in names or name in page_names:
+                raise FetchError('GraphQL: duplicate repository in pagination')
+            page_names.append(name)
+        # Commit this page only after its complete structure is validated.
         user = user or page
-        connection = page["repositories"]
-        repositories.extend(connection["nodes"])
-        if not connection["pageInfo"]["hasNextPage"]:
+        repositories.extend(nodes)
+        names.update(page_names)
+        if not info['hasNextPage']:
             break
-        after = connection["pageInfo"]["endCursor"]
+        cursors.add(next_cursor)
+        after = next_cursor
     user = {key: value for key, value in user.items() if key != "repositories"}
     return {**user, "repositories": repositories}
 
